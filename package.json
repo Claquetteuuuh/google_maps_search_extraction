@@ -1,0 +1,28 @@
+{
+  "name": "my_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "init": "npm install -D @types/node autoprefixer eslint eslint-config-next nodemon typescript",
+    "dev": "nodemon  --watch . --ext js,json,hbs,html,ts --exec \"npx tsx ./src/index.ts\"",
+    "start": "npx tsx ./src/index.ts"
+  },
+  "nodemonConfig": {
+    "ext": "js,json,hbs,html,ts"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "^15.0.4",
+    "nodemon": "^3.1.7",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@types/cheerio": "^0.22.35",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0"
+  }
+}
