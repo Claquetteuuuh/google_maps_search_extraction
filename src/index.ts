@@ -215,14 +215,13 @@ async function processUrls(urls: string[]): Promise<AgencyInfo[]> {
 async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: "w" | "a"): Promise<void> {
     logger.info(`Conversion en CSV pour ${agencies.length} agences`);
     
-    const headers = ['name', 'rating', 'phone', 'website', 'address'];
+    const headers = ['name', 'phone', 'website', 'address'];
 
     const csvRows = [
         (mode === "w") ? headers.join(',') : undefined,
         ...agencies.map(agency => {
             return [
                 `"${agency.name.replace(/"/g, '""')}"`,
-                `"${agency.rating}"`,
                 `"${agency.phone}"`,
                 `"${agency.website || ''}"`,
                 `"${agency.address || ''}"`,
