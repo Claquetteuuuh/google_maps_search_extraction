@@ -215,7 +215,7 @@ async function processUrls(urls: string[]): Promise<AgencyInfo[]> {
 async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: "w" | "a"): Promise<void> {
     logger.info(`Conversion en CSV pour ${agencies.length} agences`);
     
-    const headers = ['name', 'rating', 'phone', 'city', 'website', 'address'];
+    const headers = ['name', 'rating', 'phone', 'website', 'address'];
 
     const csvRows = [
         (mode === "w") ? headers.join(',') : undefined,
@@ -224,7 +224,6 @@ async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: 
                 `"${agency.name.replace(/"/g, '""')}"`,
                 `"${agency.rating}"`,
                 `"${agency.phone}"`,
-                `"${agency.city}"`,
                 `"${agency.website || ''}"`,
                 `"${agency.address || ''}"`,
             ].join(',');
