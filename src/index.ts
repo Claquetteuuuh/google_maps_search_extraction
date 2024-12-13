@@ -157,7 +157,7 @@ function extractAgencyInfo(html: string): AgencyInfo[] {
                 break;
             }
         }
-        
+
         // Extraction du site web
         const websiteLink = agencyBlock.find('a.yYlJEf').filter((_, el) => {
             const href = $(el).attr('href') || '';
@@ -218,7 +218,7 @@ async function processUrls(urls: string[]): Promise<AgencyInfo[]> {
 async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: "w" | "a"): Promise<void> {
     logger.info(`Conversion en CSV pour ${agencies.length} agences`);
     
-    const headers = ['name', 'phone', 'website', 'address'];
+    const headers = ['name', 'phone', 'address', 'website'];
 
     const csvRows = [
         (mode === "w") ? headers.join(',') : undefined,
@@ -226,8 +226,8 @@ async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: 
             return [
                 `"${agency.name.replace(/"/g, '""')}"`,
                 `"${agency.phone}"`,
-                `"${agency.website || ''}"`,
                 `"${agency.address || ''}"`,
+                `"${agency.website || ''}"`,
             ].join(',');
         })
     ].filter(Boolean);
