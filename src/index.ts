@@ -88,64 +88,96 @@ function cleanText(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
 }
 
+
+function extractAddressFromDirectionLink(href: string): string {
+    const addressMatch = href.match(/\/maps\/dir\/\/(.*?)\/data=/);
+    if (addressMatch && addressMatch[1]) {
+        // Décoder l'URL et remplacer les + par des espaces
+        const fullAddress = decodeURIComponent(addressMatch[1].replace(/\+/g, ' '));
+        
+        // Séparer le nom de l'adresse en utilisant la virgule
+        const parts = fullAddress.split(',');
+        
+        // Retirer le premier élément (nom) et joindre le reste
+        if (parts.length > 1) {
+            return parts.slice(1).join(',').trim();
+        }
+        return fullAddress;
+    }
+    return '';
+}
+
 function extractAgencyInfo(html: string): AgencyInfo[] {
     const $ = cheerio.load(html);
     const agencies: AgencyInfo[] = [];
 
-    // Sélectionner chaque bloc d'agence
     $('.VkpGBb').each((_, element) => {
         const agencyBlock = $(element);
+        
+        // Extraction du nom
         let name = agencyBlock.find('.OSrXXb').first().text().trim();
+        
+        // Extraction de la note
         let rating = agencyBlock.find('.yi40Hd').first().text().trim();
-
-        // Trouver tous les divs contenant les informations
-        const infoDiv = agencyBlock.find('.vwVdIc .rllt__details div').last();
-        const allInfoText = infoDiv.text();
-
-        // Extraire la ville et le téléphone
-        let city = '';
-        let phone = '';
-
-        // Chercher le texte contenant "Ouvert" ou une ville
-        const infoParts = allInfoText.split('·').map(part => part.trim());
-
-        // Pour la ville, chercher dans le div précédent qui contient souvent "ans en activité"
-        const locationDiv = agencyBlock.find('.vwVdIc div').filter((_, el) => {
-            return $(el).text().includes('en activité');
-        });
-        if (locationDiv.length) {
-            const locationParts = locationDiv.text().split('·');
-            city = locationParts[locationParts.length - 1].trim();
+        
+        // Extraction de l'adresse depuis le lien d'itinéraire
+        let address = '';
+        const directionLink = agencyBlock.find('a[href^="/maps/dir"]');
+        if (directionLink.length) {
+            const href = directionLink.attr('href');
+            if (href) {
+                address = extractAddressFromDirectionLink(href);
+            }
         }
 
-        // Pour le téléphone, prendre le dernier élément qui ressemble à un numéro
-        for (const part of infoParts.reverse()) {
-            if (part.match(/\d{2}[\s\.]?\d{2}[\s\.]?\d{2}[\s\.]?\d{2}[\s\.]?\d{2}/)) {
-                phone = part.trim();
+        // Extraction de la ville
+        let city = '';
+        const locationText = agencyBlock.find('.vwVdIc div')
+            .filter((_, el) => $(el).text().includes('en activité'))
+            .first()
+            .text();
+
+        if (locationText) {
+            const parts = locationText.split('·');
+            city = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+        }
+
+        // Extraction du téléphone
+        let phone = '';
+        const lastInfoDiv = agencyBlock.find('.vwVdIc div').last();
+        const infoParts = lastInfoDiv.text().split('·');
+        
+        for (const part of infoParts) {
+            const cleaned = part.trim();
+            if (cleaned.match(/^\d{2}[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}$/)) {
+                phone = cleaned;
                 break;
             }
         }
 
-        // Extraire le site web (exclure les URLs Google Ads)
+        // Extraction du site web
         const websiteLink = agencyBlock.find('a.yYlJEf').filter((_, el) => {
             const href = $(el).attr('href') || '';
-            return !href.includes('googleadservices') && !href.includes('/maps/');
+            return !href.includes('googleadservices') && 
+                   !href.includes('/maps/') &&
+                   !href.includes('/search?');
         }).first().attr('href');
 
-        if (name) {  // Ne garder que les résultats avec au moins un nom
+        // Ne créer l'objet que si on a au moins un nom
+        if (name) {
             agencies.push({
                 name: cleanText(name),
                 rating: rating,
                 phone: cleanText(phone),
                 city: cleanText(city),
-                website: websiteLink
+                website: websiteLink,
+                address: cleanText(address)
             });
         }
     });
 
     return agencies;
 }
-
 
 async function processUrls(urls: string[]): Promise<AgencyInfo[]> {
     let allAgencies: AgencyInfo[] = [];
@@ -183,7 +215,7 @@ async function processUrls(urls: string[]): Promise<AgencyInfo[]> {
 async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: "w" | "a"): Promise<void> {
     logger.info(`Conversion en CSV pour ${agencies.length} agences`);
     
-    const headers = ['name', 'rating', 'phone', 'website'];
+    const headers = ['name', 'rating', 'phone', 'city', 'website', 'address'];
 
     const csvRows = [
         (mode === "w") ? headers.join(',') : undefined,
@@ -192,7 +224,9 @@ async function saveAgenciesToCSV(agencies: AgencyInfo[], outFile: string, mode: 
                 `"${agency.name.replace(/"/g, '""')}"`,
                 `"${agency.rating}"`,
                 `"${agency.phone}"`,
+                `"${agency.city}"`,
                 `"${agency.website || ''}"`,
+                `"${agency.address || ''}"`,
             ].join(',');
         })
     ].filter(Boolean);
