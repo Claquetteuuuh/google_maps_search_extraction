@@ -142,19 +142,22 @@ function extractAgencyInfo(html: string): AgencyInfo[] {
             city = parts.length > 1 ? parts[parts.length - 1].trim() : '';
         }
 
-        // Extraction du téléphone
         let phone = '';
         const lastInfoDiv = agencyBlock.find('.vwVdIc div').last();
         const infoParts = lastInfoDiv.text().split('·');
         
+        // Chercher un numéro de téléphone au format français
         for (const part of infoParts) {
             const cleaned = part.trim();
-            if (cleaned.match(/^\d{2}[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}$/)) {
-                phone = cleaned;
+            // Regex modifiée pour capturer spécifiquement les numéros français avec zéro initial
+            const phoneMatch = cleaned.match(/0\d[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}[\s.]?\d{2}/);
+            if (phoneMatch) {
+                // Garder le numéro tel quel, avec le zéro initial
+                phone = phoneMatch[0];
                 break;
             }
         }
-
+        
         // Extraction du site web
         const websiteLink = agencyBlock.find('a.yYlJEf').filter((_, el) => {
             const href = $(el).attr('href') || '';
